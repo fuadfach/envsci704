@@ -1,0 +1,277 @@
+---
+title: "Lab 02: Numerical Model"
+author: "Fuad Fachrudin (908068138)"
+date: 10 August 2026
+format:
+  pdf:
+    toc: true
+    code-fold: false
+    embed-resources: true
+execute:
+  warning: false
+---
+
+<!--
+============================================================
+ENVSCI 704 lab template
+============================================================
+How to use this file:
+
+1. Copy it into your GitHub course repo and rename it, e.g.
+   `lab-02-numerical.qmd`.
+2. Fill in the YAML header above (title, your name, student ID).
+3. Work through the tasks below. Delete any sections you do not need.
+4. Render locally with the "Render" button in VS Code, or:
+       quarto render lab-XX-topic.qmd
+5. Commit and push. Submit the link on Canvas.
+
+Tips:
+- One question, one small code cell — do not put everything in one big block.
+- Write short answers in prose *between* code cells, not as comments in code.
+- Rename figures with `#| fig-cap: "..."` so the reader knows what they are.
+- Round floats when you print: `f"{value:.2f}"`.
+============================================================
+-->
+
+## Setup
+
+```{python}
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+```
+
+## Part A: Tracer decay and step size (numerical)
+
+1. In one sentence, describe what the decay rate ***k***
+ controls. Change `k` to `0.1` and to `0.01` to check your answer. 
+```{python}
+def decay_numerical(C0, k, dt, t_end):
+    """Return arrays of time and concentration for forward-Euler tracer decay."""
+    n = int(t_end / dt)
+    C = C0
+    ts = [0.0]
+    Cs = [C0]
+    for i in range(n):
+        C = C + (-k * C) * dt          # forward difference
+        ts.append((i + 1) * dt)
+        Cs.append(C)
+    return np.array(ts), np.array(Cs)
+
+# The exact answer, for comparison
+C0, k, t_end = 100.0, 0.1, 60.0
+t_fine = np.linspace(0, t_end, 200)
+exact = C0 * np.exp(-k * t_fine)
+
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.plot(t_fine, exact, "k-", label="Exact")
+
+for dt in [1.0]:
+    ts, Cs = decay_numerical(C0, k, dt, t_end)
+    ax.plot(ts, Cs, "o--", markersize=4, label=f"dt = {dt}")
+
+ax.set_xlabel("Time")
+ax.set_ylabel("Concentration C")
+ax.set_title("Tracer decay: numerical vs exact")
+ax.legend()
+plt.show()
+```
+**Answer to task A1:** _The decay rate (k) controls the rate of decay over time, a smaller value of k results in a slower decay process and a longer decay time._
+
+2. Change `dt` to `2.0`, then to `5.0`. At what value of dt does the numerical curve start to visibly disagree with the exact one? Report the value.
+```{python}
+# The exact answer, for comparison
+C0, k, t_end = 100.0, 0.05, 60.0
+t_fine = np.linspace(0, t_end, 200)
+exact = C0 * np.exp(-k * t_fine)
+
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.plot(t_fine, exact, "k-", label="Exact")
+
+for dt in [1.0, 2.0, 5.0]:
+    ts, Cs = decay_numerical(C0, k, dt, t_end)
+    ax.plot(ts, Cs, "o--", markersize=4, label=f"dt = {dt}")
+
+ax.set_xlabel("Time")
+ax.set_ylabel("Concentration C")
+ax.set_title("Tracer decay: numerical vs exact")
+ax.legend()
+plt.show()
+```
+**Answer to task A2:** _The numerical curve deviates significantly from the exact solution when dt is increased to 5._
+
+3. With `k = 1.0` and `t_end = 6.0`, run the model at `dt = 0.5, 1.0, 2.0, 2.5`. Plot all four curves and the exact solution on **one figure**. What is the largest dt that still gives a non-negative curve? 
+```{python}
+# The exact answer, for comparison
+C0, k, t_end = 100.0, 1.0, 6.0
+t_fine = np.linspace(0, t_end, 200)
+exact = C0 * np.exp(-k * t_fine)
+
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.plot(t_fine, exact, "k-", label="Exact")
+
+for dt in [0.5, 1.0, 2.0, 2.5]:
+    ts, Cs = decay_numerical(C0, k, dt, t_end)
+    ax.plot(ts, Cs, "o--", markersize=4, label=f"dt = {dt}")
+
+ax.set_xlabel("Time")
+ax.set_ylabel("Concentration C")
+ax.set_title("Tracer decay: numerical vs exact")
+ax.legend()
+plt.show()
+```
+**Answer to task A3:**  _**dt = 1.0** is the largest **dt** that produces the non-negative curve._
+
+4. In two to three sentences, explain why a large dt makes the numerical curve overshoot into negative values. Refer to the update rule ***C<sub>new</sub> = C<sub>old</sub> - kC<sub>old</sub>dt*** when ***k.dt >1***
+
+**Answer to task A4:** _An large **dt** causes the numerical calculation to deviate significantly because the large time interval results in an extremely sharp decrease in the substance concentration. The negative decay value at the first time step causes the numerical curve to deviate significantly from the exact solution._
+
+
+## Part B: Reservoir box model (process-based)
+
+```{python}
+# ---- Parameters ----
+V = 1.0e6        # lake volume (m^3)
+Q = 5.0e3        # river inflow (m^3 per day)
+C_in = 10.0      # incoming concentration (mg/L)
+k = 0.05         # in-lake decay rate (per day)
+
+# ---- Time settings ----
+dt = 1.0         # time step (days)
+days = 200
+
+# ---- Initial condition ----
+C = 0.0          # clean lake
+
+# ---- Storage ----
+history = [C]
+
+# ---- Time loop ----
+for _ in range(days):
+    dCdt = (Q * C_in - Q * C - k * V * C) / V   # the rate of change
+    C = C + dCdt * dt                            # forward difference
+    history.append(C)
+
+# ---- plotting ----
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.plot(history)
+ax.set_xlabel("Day")
+ax.set_ylabel("Lake concentration (mg/L)")
+ax.set_title("Reservoir box model: pollutant in a lake")
+plt.show()
+
+# ---- A quick look at the numbers ----
+print(f"Started at {history[0]:.2f} mg/L")
+print(f"After 10 days: {history[10]:.2f} mg/L")
+print(f"After 50 days: {history[50]:.2f} mg/L")
+print(f"After {days} days: {history[-1]:.2f} mg/L")
+```
+
+
+1. Compute the analytical steady state ***C* = QC<sub>in</sub>/(Q+kV)*** and confirm the numerical model reaches it. Report both values.
+```{python}
+C_star = (Q * C_in) / (Q + k * V)
+print(f"Analytical steady state: {C_star:.2f} mg/L")
+print(f"Numerical final value:   {history[-1]:.2f} mg/L")
+print(f"Difference:              {abs(C_star - history[-1]):.4f} mg/L")
+```
+**Answer to task B1:** _After 200 days, the analytical steady state computation and numerical method reached the same pollutant concentration value of 0.91 mg/L._
+
+2. Start from a _polluted_  lake (`C = 20`) instead of a clean one. Describe in one sentence what happens.
+```{python}
+# ---- Initial condition ----
+C = 20.0          # polluted lake
+
+# ---- Storage ----
+history = [C]
+
+# ---- Time loop ----
+for _ in range(days):
+    dCdt = (Q * C_in - Q * C - k * V * C) / V   # the rate of change
+    C = C + dCdt * dt                            # forward difference
+    history.append(C)
+
+# ---- plotting ----
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.plot(history)
+ax.set_xlabel("Day")
+ax.set_ylabel("Lake concentration (mg/L)")
+ax.set_title("Reservoir box model: pollutant in a polluted lake")
+plt.show()
+
+# ---- A quick look at the numbers ----
+print(f"Started at {history[0]:.2f} mg/L")
+print(f"After 10 days: {history[10]:.2f} mg/L")
+print(f"After 50 days: {history[50]:.2f} mg/L")
+print(f"After {days} days: {history[-1]:.2f} mg/L")
+```
+**Answer to task B2:** _The concentration of pollutants in the polluted lake gradually decreased and reached the same concentration value as the unpolluted lake after 200 days at 0.91 mg/L._
+
+
+3. **Double** the river inflow `Q`. Does the steady state rise or fall? Explain in one sentence using the formula for ***C****.
+```{python}
+# ---- Parameters ----
+V = 1.0e6        # lake volume (m^3)
+Q = 5.0e3*2        # doubled river inflow (m^3 per day)
+C_in = 10.0      # incoming concentration (mg/L)
+k = 0.05         # in-lake decay rate (per day)
+
+C_star = (Q * C_in) / (Q + k * V)
+print(f"Analytical steady state: {C_star:.2f} mg/L")
+```
+**Answer to task B3:** _The steady state value rise from 0.91 mg/L to 1.67 mg/L. As the river inflow was doubled, the pollutant input also doubled, but the decay rate in the lake did not double, ultimately increasing the pollutant._
+
+4. Sweep the decay rate `k` over `[0.02, 0.05, 0.1, 0.2]` and overlay the four resulting curves on one figure (use the pattern from Chapter 2.2’s “Sweeping a parameter”). In one sentence, describe how `k` affects both the steady-state value and the speed of approach. 
+```{python}
+# ---- Parameters ----
+V = 1.0e6        # lake volume (m^3)
+Q = 5.0e3        # river inflow (m^3 per day)
+C_in = 10.0      # incoming concentration (mg/L)
+
+# ---- Time settings ----
+dt = 1.0         # time step (days)
+days = 200
+
+# ---- Initial condition ----
+C = 0.0          # clean lake
+
+# ---- Storage ----
+history = [C]
+
+fig, ax = plt.subplots(figsize=(7, 4))
+
+for k_test in [0.02, 0.05, 0.10, 0.20]:
+    C = 0.0
+    history = [C]
+    for _ in range(days):
+        dCdt = (Q * C_in - Q * C - k_test * V * C) / V
+        C = C + dCdt * dt
+        history.append(C)
+    ax.plot(history, label=f"k = {k_test}")
+
+    # steady state
+    C_star = (Q * C_in) / (Q + k_test * V)
+    print(f"# for k = {k_test}")
+    print(f"Analytical steady state : {C_star:.2f} mg/L")
+    print(f"Numerical final value   : {history[-1]:.2f} mg/L")
+    print(f"Difference              : {abs(C_star - history[-1]):.4f} mg/L")
+
+ax.set_xlabel("Day")
+ax.set_ylabel("Lake concentration (mg/L)")
+ax.set_title("Effect of decay rate on the reservoir")
+ax.legend()
+plt.show()
+```
+**Answer to task B4:** _The greater the decay rate (k), the greater the influence on the rate of change in lake concentration and how concentrated the final concentration is._
+
+## Reflection
+
+I think the trickiest part is when we define the numerical equation, then put it in a looping process, like what variable we can loop. In part B we have one lake with one river, but in reality we can see many rivers flows into a lake. So, I would like to increase the amount of river with different concentrations and volumes to see the result on the reservoir.
+
+## Checklist before you push
+
+- [x] Every task has a code cell **and** a short prose answer
+- [x] Every figure has axis labels and a title
+- [x] Your name and student ID are in the YAML header
+- [x] The file renders cleanly (no red error boxes in the HTML output)
+- [x] Filename is `lab-XX-topic.qmd`, not `Untitled.qmd`

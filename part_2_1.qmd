@@ -1,0 +1,138 @@
+---
+title: "Lab 02: [Numerical Model]"
+author: "Fuad Fachrudin (908068138)"
+date: 10 August 2026
+format:
+  html:
+    toc: true
+    code-fold: false
+    embed-resources: true
+execute:
+  warning: false
+---
+# Part 1: The Python you need for a model
+
+## Variables and printing
+
+A **variable** is a name that stores a value.
+```{python}
+concentration = 100.0     # a floating-point number
+day = 0                   # an integer
+site = "Waikato River"    # a string
+is_tidal = True           # a boolean
+
+print(concentration)
+print(day, site, is_tidal)
+```
+
+An **f-string** is the tidiest way to combine text and numbers:
+```{python}
+day = 5
+concentration = 47.6183
+
+print(f"Day {day}: concentration = {concentration} mg/L")
+print(f"Day {day}: concentration = {concentration:.2f} mg/L")   # round to 2 decimals
+print(f"Day {day}: concentration = {concentration:.0f} mg/L")   # round to whole
+print(f"Day {day}: concentration = {concentration:.5e} mg/L")   # scientific notation
+```
+The `:.2f` inside `{}` means “show as a float with 2 decimal places”. Use it every time you print a model output — it stops your figures from looking noisy.
+
+Change the `2` in `:.2f` to `3`, `1`, and `0` and re-run. Then swap `f` for `e` (scientific notation).
+
+### Numbers, arithmetic, and rounding
+```{python}
+a = 7
+b = 2
+
+print(a + b, a - b, a * b, a / b, a // b, a ** b)
+#   sum, diff, product, division, floor-div, power
+```
+
+Common rounding functions:
+```{python}
+x = 3.14159
+
+print(round(x, 2))        # 3.14   — built-in rounding
+print(round(x))           # 3      — no argument = to integer
+print(int(x))             # 3      — truncates towards zero
+print(round(2.5))
+print(round(3.5))   
+print(round(4.5))     
+```
+
+What does `round(2.5)` give you? What about `round(3.5)`? Python uses “banker’s rounding” — surprises many people. Never trust rounding blindly.
+
+### Lists
+A **list** holds several values in order. You will use lists to store time series before we switch to NumPy.
+```{python}
+values = [100.0, 95.0, 90.25, 85.7]
+
+print(values)
+print(values[0])       # first item (index 0)
+print(values[1])       # second item
+print(values[-1])      # last item
+print(values[-2])      # second last
+
+print(len(values))     # how many items in the list
+```
+
+**Slicing** — grab a range with `[start:stop]` (stop is exclusive):
+```{python}
+values = [10, 20, 30, 40, 50, 60, 70, 80]
+
+print(values[0:3])     # [10, 20, 30]  first three
+print(values[2:5])     # [30, 40, 50]  middle
+print(values[:4])      # [10, 20, 30, 40]  from the start
+print(values[4:])      # [50, 60, 70, 80]  to the end
+print(values[-3:])     # [60, 70, 80]  last three
+```
+
+Add to a list with `.append`:
+```{python}
+history = [100.0]
+history.append(95.0)
+history.append(90.25)
+
+print(history)
+print(f"Started at {history[0]}, ended at {history[-1]}")
+```
+
+### `for` loops
+A loop repeats an action. This is the engine of every numerical model in this course.
+
+The simplest form loops over a range of integers:
+```{python}
+for step in range(5):
+    print(f"Step {step}")
+```
+
+`range(5)` gives `0, 1, 2, 3, 4` — five steps starting from zero.
+
+You can also loop **over the items in a list** — very useful when you have a set of parameter values or site names:
+
+```{python}
+for k in [0.02, 0.05, 0.10, 0.20]:
+    print(f"Decay rate k = {k}")
+```
+
+```{python}
+total = 0
+for value in [3.2, 4.1, 2.8, 5.5]:
+    total = total + value
+print(f"Sum = {total}")    
+print(f"Sum = {total}")
+print(f"Mean = {total / 4}")
+```
+
+```{python}
+concentration = 100.0
+decay_rate = 0.05
+dt = 1.0
+history = [concentration]     # store the starting value
+
+for step in range(0):
+    concentration = concentration - decay_rate * concentration * dt
+    history.append(concentration)
+
+print(history)
+```
