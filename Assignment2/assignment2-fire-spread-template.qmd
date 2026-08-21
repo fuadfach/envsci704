@@ -1,0 +1,147 @@
+---
+title: "Assignment 2: Fire-spread model in NetLogo"
+author: "Fuad Fachrudin (908068138)"
+date: 21 August 2026
+format:
+  html:
+    toc: true
+    embed-resources: true
+execute:
+  warning: false
+---
+
+<!--
+============================================================
+ENVSCI 704 Assignment 2 template (fire-spread lab, Chapter 3.4)
+============================================================
+How to use this file:
+
+1. In your GitHub course repo, create the folder `Assignment2/`
+   and save this file there as `fire-spread.qmd`.
+2. Fill in the YAML header above (your name and student ID).
+3. Work through Parts A to C below. Every task needs code or a
+   screenshot AND a short written answer.
+4. Save screenshots as .png files in an `images/` folder next to
+   this file (macOS: Cmd+Shift+4, Windows: Snipping Tool), then
+   embed them like this:
+       ![caption](images/fire-density60.png){width=70%}
+5. Commit and push the .qmd AND the images/ folder, then paste
+   the link on Canvas.
+
+Tips:
+- NetLogo code goes in netlogo-fenced code blocks, not Python cells.
+- Give every screenshot a caption so the reader knows what it shows.
+- If you build your Part B table in Excel, convert it with
+  https://tabletomarkdown.com/convert-spreadsheet-to-markdown/
+============================================================
+-->
+
+## Part A: Build the model
+
+Paste your complete NetLogo code (the `globals`, `setup`, and `go` procedures):
+
+```netlogo
+globals [
+  initial-trees
+  burned-trees
+]
+
+to setup
+  clear-all
+  ask patches [
+    if random 100 < density [ set pcolor green ]
+  ]
+  ask patches with [ pxcor = min-pxcor ] [
+    if pcolor = green [ set pcolor red ]
+  ]
+  set initial-trees count patches with [ pcolor = green or pcolor = red ]
+  set burned-trees 0
+  reset-ticks
+end
+
+to go
+  if not any? patches with [ pcolor = red ] [ stop ]
+  ask patches with [ pcolor = red ] [
+    ask neighbors4 with [ pcolor = green ] [
+      set pcolor red
+    ]
+    set pcolor grey
+    set burned-trees burned-trees + 1
+  ]
+  tick
+end
+```
+
+**Task A1.** Embed your screenshot of the final state of the world at `density = 60`:
+
+![NetLogo Fire Density 60%](netlogo_fire_60){width=70%}
+
+**Task A2.** Percent burned at the end of the run: _(84.7)_
+
+## Part B: Find the critical density
+
+**Task B1.** Complete the table: ten runs at each density, percent burned each time.
+
+| Density | Run 1 | Run 2 | Run 3 | Run 4 | Run 5 | Run 6 | Run 7 | Run 8 | Run 9 | Run 10 | Mean  |
+|--------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|-------:|------:|
+| 40      | 8.4   | 6.6   | 4.4   | 20.5  | 18.2  | 9.2   | 11    | 15.8  | 4.3   | 18.2   | 11.66 |
+| 50      | 50    | 40.4  | 22.4  | 31.7  | 15.6  | 32    | 41.1  | 13.3  | 23.5  | 29.2   | 29.92 |
+| 55      | 73    | 30.8  | 32.9  | 67.8  | 69    | 51.4  | 86.2  | 73.7  | 50.4  | 69.5   | 60.47 |
+| 58      | 42.9  | 90.1  | 52.2  | 90.2  | 34.2  | 93.3  | 76.4  | 90.4  | 54.9  | 56.7   | 68.13 |
+| 59      | 82.5  | 66.3  | 93.6  | 88.9  | 96.6  | 77.1  | 91.6  | 57.3  | 83    | 91.7   | 82.86 |
+| 60      | 70.2  | 37.8  | 94.3  | 87.9  | 92.6  | 77.1  | 95.4  | 81.5  | 92    | 92.1   | 82.09 |
+| 62      | 76.5  | 94.7  | 90.9  | 94.4  | 87.5  | 96.4  | 56.1  | 95.1  | 92.8  | 86.7   | 87.11 |
+| 65      | 97.6  | 94.6  | 96.6  | 94.1  | 94.1  | 97.4  | 97.5  | 97    | 97.1  | 95.8   | 96.18 |
+| 70      | 99.4  | 99.1  | 99.9  | 99.7  | 99.4  | 97.2  | 98.3  | 98.9  | 99.1  | 98.4   | 98.94 |
+| 80      | 99.7  | 100   | 99.8  | 99.8  | 100   | 99.8  | 100   | 100   | 99.8  | 99.5   | 99.84 |
+
+**Task B2.** Plot mean percent burned vs density. By hand or Excel: embed a photo or screenshot. In Python: use the code cell below.
+
+```{python}
+#| eval: false
+import matplotlib.pyplot as plt
+
+density = [40, 50, 55, 58, 59, 60, 62, 65, 70, 80]
+mean_burned = [11.66, 29.92, 60.47, 68.13, 82.86, 82.09, 87.11, 96.18, 98.94, 99.84]  # fill in your means
+
+fig, ax = plt.subplots(figsize=(6, 4))
+ax.plot(density, mean_burned, marker="o")
+ax.set_xlabel("Density (%)")
+ax.set_ylabel("Mean percent burned (%)")
+ax.set_title("Percent burned vs tree density")
+plt.show()
+```
+
+**Task B3 (critical-density estimate).** 
+**Answer :** From my data, the mean percentage rises sharply at around 59% density, from 68.1% to 82.8% burned. This shows that the theoretical value threshold of about 59% matches my estimated value. Fire will tend to burn the forest completely if the density exceeds 59%.
+
+**Task B4 (variability near the threshold).** 
+**Answer :**
+- Critical density produces the largest variation in burned percentage compared to 40% and 80% densities. The difference between the maximum and minimum burned percentages at the critical density is 39%, while at 40% and 80% densities, it is only 16% and 0.5%, respectively.
+- The variability is greatest near the threshold because this point represents a mathematical phase transition, representing the transition between interconnected forest clusters within a single landscape or isolated forest clusters. Connected forest clusters will burn more trees, while isolated forest clusters will decrease the percentage burned. Therefore, ​​at the critical density will result in high burned variation.
+
+
+## Part C: Summary ODD documentation
+
+Replace each `<...>` placeholder with your own text about the fire model. Keep the **bold** phrases as they are and keep ODD's key words in *italics*. Aim for one short paragraph per element. 
+
+**The overall *purpose* of our model is** \to simulate a forest fire spread through a landscape to assess landscape vulnerability.\ **Specifically, we are addressing the following questions:** \how does the total proportion of burned trees respond to varying levels of initial tree density?\ **To consider our model realistic enough for its purpose, we use the following *patterns*:** \ a sharp threshold in fire spread, where the fire shifts from dying out locally to reliably spanning the entire forest landscape.\
+
+**The model includes the following *entities*:** \patches representing trees, empty, burning, and burnt, while globals representing density, tick\ **The *state variables* characterising these entities are listed in Table 1.** **The *spatial* and *temporal* resolution and extent are** \one patch represents a standard unit of forest area, one tick represents a discrete time step of fire propagation, and a run ends when there are no actively burning trees left in the landscape.\
+
+**The most important *processes* of the model, which are repeated every *time step*, are** \checking for active fires, fire spread, and burnout. During each tick, the model identifies all actively burning trees (red patches) and causes them to ignite any unburned trees (green patches) in their immediate four-cell neighborhood (neighbors4). The currently burning trees then transition to a burned-out state (grey patches), the global burned-trees counter is incremented, and the clock moves forward until the fire extinguishes.\
+
+**The most important *design concepts* of the model are** \emergence: the macroscopic critical density threshold and the total burned area emerge entirely from the bottom-up, local fire-spread interactions without any global blueprint; and stochasticity: the initial placement of trees is generated randomly based on a probability density, ensuring every simulated landscape is uniquely configured.\
+
+**The model is initialized with** \trees randomly placed across the grid according to a user-defined density slider (a percentage out of 100). The fire is ignited by identifying all trees (green patches) located on the extreme left edge of the grid (min-pxcor) and setting them on fire (red). Global counters for initial-trees and burned-trees are set, and the clock is reset to zero.\
+
+**Table 1.** Entities and state variables of the model.
+
+| Entity | Variable      | Description                                                                    | Possible values | Units |
+| ------ | ------------- | ------------------------------------------------------------------------------ | --------------- | ----- |
+| Patch  | pcolor        | Represents the status of the forest grid cell (unburned trees/empty)           | green/black     | \-    |
+| Patch  | color         | Represents the status of the forest grid cell (burning trees/burned-out trees) | red/ grey       | \-    |
+| Global | initial-trees | Records the total number of trees present at the beginning of the simulation   | ≥ 0             | patch |
+| Global | burned-trees  | Records the cumulative number of trees that have burned                        | ≥ 0             | patch |
+| Global | density       | Controls the initial proportion of patches containing trees                    | 0–100           | %     |
+
